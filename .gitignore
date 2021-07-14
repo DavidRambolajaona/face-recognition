@@ -1,0 +1,9 @@
+.idea/
+venv/
+debug.log
+__pycache__/
+appli/blueprint/facebook/static/img/faces/*
+!appli/blueprint/facebook/static/img/faces/.gitkeep
+appli/blueprint/facebook/static/img/uploads/*
+!appli/blueprint/facebook/static/img/uploads/.gitkeep
+session.pkl

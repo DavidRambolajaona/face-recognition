@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>As-qui tu ressembles ?</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="undefined" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" integrity="undefined" crossorigin="anonymous"></script>
+
+    <style>
+        #preview{
+            height: 300px;
+        }
+
+        body {
+            background-color: #001B3A;
+        }
+
+        #loading_screen{
+            position: absolute;
+            height: 100%;
+            width: 100%;
+            z-index: 1000;
+            background-color: black;
+            opacity: 0.95;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        #blague_zone {
+            height: 60%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #blague_texts {
+            width: 90%;
+        }
+
+        #blague_buttons {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading_screen" style="display: none;">
+        <h5 id="loading_text">Chargement...</h5>
+        <div id="loading_spinner" class="spinner-border text-light" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <button id="ok_btn_loading" class="btn btn-primary px-5" style="display: none;" onclick='$("#loading_screen").hide();'>OK</button>
+        <h5>Quelques blagues en attendant :</h5>
+        <div id="blague_zone">
+            <div id="blague_texts">
+                <div id="jokeQuestion" class="mb-4">
+
+                </div>
+                <div id="jokeSolution">
+                    
+                </div>
+            </div>
+            <div id="blague_buttons">
+                <button id="btnJokePrev" class="btn btn-primary mx-3">Précédant</button>
+                <span id="currentJokeText" class="h5 h-100" style="display: flex; flex-direction: column; justify-content: center;">1</span>
+                <button id="btnJokeNext" class="btn btn-primary mx-3">
+                    <div class="spinner-border text-light" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-sm-12 text-center">
+                <h4 class="m-3 text-white">Envoie une photo avec un visage pour trouver son sosie sur Facebook :)</h4>
+                <img id="preview" class="my-3 d-none mx-auto">
+                <form class="">
+                    <input type="file" class="form-control d-none" name="photo" id="photo" accept="image/*" required>
+
+                    <button id="choose_file" class="btn btn-primary mx-2">Choisir une photo</button>
+
+                    <button id="send" type="submit" class="btn btn-success mx-2 d-none" disabled>Envoyer</button>
+
+                    <div id="personne_unique" class="form-check my-3" style="display: none;">
+                        <input class="form-check-input" type="checkbox" value="" id="check_personne_unique">
+                        <label class="form-check-label text-white" for="check_personne_unique">
+                          Personnes uniques
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col" id="content-cards">
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        var fileReader = new FileReader();
+        var photofilename = '';
+        var topPeople = [];
+        var topPeopleUnique = [];
+
+        $("#choose_file").click(function(e){
+            e.preventDefault();
+            $("#photo").click();
+        });
+
+        $("#photo").change(function(e){
+            var uploadFile = document.getElementById("photo").files;
+            if (uploadFile && uploadFile[0]) {
+                fileReader.readAsDataURL(uploadFile[0]);
+                photofilename = document.getElementById('photo').value;
+                $("#content-cards").html("");
+                $("#personne_unique").hide();
+                $('#check_personne_unique').prop("checked", false);
+            }
+            $("#preview").removeClass("d-none")
+
+            $("#choose_file").removeClass("btn-primary");
+            $("#choose_file").addClass("btn-danger");
+            $("#choose_file").text("Changer");
+
+            $("#send").attr("disabled", false);
+            $("#send").removeClass("d-none")
+        });
+
+        fileReader.onload = function (event) {
+            var image = new Image();
+            
+            image.onload=function(){
+                document.getElementById("preview").src=image.src;
+                var canvas=document.createElement("canvas");
+                var context=canvas.getContext("2d");
+
+                var MAX_WIDTH = 600;
+                var MAX_HEIGHT = 600;
+                var width = image.width;
+                var height = image.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) {
+                        height *= MAX_WIDTH / width;
+                        width = MAX_WIDTH;
+                    }
+                } else {
+                    if (height > MAX_HEIGHT) {
+                        width *= MAX_HEIGHT / height;
+                        height = MAX_HEIGHT;
+                    }
+                }
+                canvas.width=width;
+                canvas.height=height;
+
+                /*canvas.width=image.width/10;
+                canvas.height=image.height/10;*/
+                context.drawImage(image,
+                    0,
+                    0,
+                    image.width,
+                    image.height,
+                    0,
+                    0,
+                    canvas.width,
+                    canvas.height
+                );
+                
+                document.getElementById("preview").src = canvas.toDataURL();
+            }
+            image.src=event.target.result;
+        };
+
+        function generateCard(data) {
+            cardhtml = '<div class="card text-center m-3">'
+            cardhtml +=     '<img class="card-img-top mx-auto" src="'+data["src"]+'" alt="Card image cap">'
+            cardhtml +=     '<div class="card-body">'
+            cardhtml +=         '<h5 class="card-title">'+data["rank"] + '. ' +data["fb_user_name"]+'</h5>'
+            cardhtml +=         '<p class="card-text">Similarité : '+data["similarity"]+'%</p>'
+            cardhtml +=         '<a href="'+data["image_link"]+'" target="_blank" class="btn btn-light btn-outline-secondary btn-block">Voir l\'image sur Facebook</a>'
+            cardhtml +=         '<a href="'+data["user_profil"]+'" target="_blank" class="btn btn-info btn-block">Voir le profil sur Facebook</a>'
+            cardhtml +=     '</div>'
+            cardhtml += '</div>';
+            return cardhtml;
+        }
+
+        function displayTop(res) {
+            let MAX_COL_IN_ROW = 4;
+            let current_pos = 0;
+            for (let i = 0; i < res.length; i++) {
+                if ($(".card_place_free").length == 0) {
+                    $("#content-cards").append('<div class="row cards_last_row"></div>');
+                    for (let j = 0; j < MAX_COL_IN_ROW; j++) {
+                        $(".cards_last_row").append('<div class="col card_place_free" pos="'+current_pos+'"></div>');
+                        current_pos += 1;
+                    }
+                    $(".cards_last_row").removeClass("cards_last_row");
+                }
+                var $card_free = $('.card_place_free[pos="'+i+'"]').first();
+
+                data = res[i];
+                data["src"] = res[i]["file_url"];
+                data["rank"] = i + 1;
+                let similarty = Math.round((1 - res[i]["dist"]) * 10000) / 100;
+                data["similarity"] = similarty;
+                data["image_link"] = "https://facebook.com/photo/?fbid=" + res[i]["img_fb_id"];
+                data["user_profil"] = "https://facebook.com/" + res[i]["fb_user_id"];
+
+                $card_free.append(generateCard(data));
+                $card_free.removeClass("card_place_free");
+            }
+        }
+
+        $('#check_personne_unique').change(function() {
+            if ($(this).prop('checked')) {
+                var res = topPeopleUnique;
+            }
+            else {
+                var res = topPeople;
+            }
+            $("#content-cards").html("");
+            displayTop(res);
+        });
+
+        $("#send").click(function(e){
+            e.preventDefault();
+            changeLoadingJokeText(text="Chargement...", loading=true, color="#FFFFFF")
+            $("#loading_screen").show();
+            $('#check_personne_unique').prop("checked", false);
+
+            $("#send").attr("disabled", true);
+
+            fullPath = photofilename;
+            var startIndex = (fullPath.indexOf('\\') >= 0 ? fullPath.lastIndexOf('\\') : fullPath.lastIndexOf('/'));
+            var filename = fullPath.substring(startIndex);
+            if (filename.indexOf('\\') === 0 || filename.indexOf('/') === 0) {
+                filename = filename.substring(1);
+            }
+
+            var formData = new FormData();
+            urldata = document.getElementById("preview").src;
+
+            formData.append("file", urldata);
+            formData.append("filename", filename);
+
+            $("#content-cards").html("");
+            
+            $.ajax({
+                url : window.location.origin + "/fb/api/similarity",
+                type : "POST",
+                data: formData,
+                contentType:false,
+                cache:false,
+                processData:false,
+                dataType : "json",
+                success : function (res, statut){
+                    if (res.status == "error") {
+                        //alert("Error. " + res.msg);
+                        let text_error = "Une erreur s'est produite";
+                        switch (res.msg) {
+                            case "no_face":
+                                text_error = "Visage non trouvé :/";
+                                break;
+
+                            case "no_data" :
+                                text_error = "Le système n'a pas encore assez de données, désolé"
+                        
+                            default:
+                                break;
+                        }
+                        changeLoadingJokeText(text=text_error, loading=false, color="#FF0000");
+                    }
+                    else {
+                        displayTop(res.top);
+                        changeLoadingJokeText(text="Succès", loading=false, color="#00FF00")
+                        $("#personne_unique").show();
+                        topPeople = res.top;
+                        topPeopleUnique = res.top_unique;
+                    }
+                },
+                error : function (res, statut){
+                    changeLoadingJokeText(text="Une erreur s'est produite :(", loading=false, color="#FF0000")
+                },
+                complete : function (res, statut){
+                    $("#send").attr("disabled", false);
+                }
+            });
+        });
+
+        /* Joke managing */
+        var jokes = {
+            1 : {
+                "question": "{{joke['joke']|safe}}",
+                "solution": "{{joke['answer']|safe}}"
+            }
+        }
+
+        var current_joke = 1;
+        var downloading_jokes = false;
+
+        function canPreviousJoke() {
+            return Object.keys(jokes).includes((current_joke - 1).toString());
+        }
+
+        function canNextJoke() {
+            return Object.keys(jokes).includes((current_joke + 1).toString());
+        }
+
+        function updateJokeBtn() {
+            $("#btnJokePrev").attr("disabled", !canPreviousJoke());
+            $("#btnJokeNext").attr("disabled", !canNextJoke());
+            $("#currentJokeText").text(current_joke);
+        }
+
+        function updateJokeText() {
+            if (Object.keys(jokes).includes(current_joke.toString())) {
+                $("#jokeQuestion").text(jokes[current_joke]["question"]);
+                $("#jokeSolution").text(jokes[current_joke]["solution"]);
+            }
+        }
+
+        function updateJokeAll() {
+            updateJokeText();
+            updateJokeBtn();
+        }
+
+        function downloadJokesIfNecessary() {
+            jokes_keys = Object.keys(jokes);
+            let lastJoke = parseInt(jokes_keys[jokes_keys.length - 1]);
+            if ((lastJoke - current_joke) < 6 && !downloading_jokes) {
+                downloading_jokes = true;
+                $.ajax({
+                    url : window.location.origin + "/joke/api/get",
+                    type : "GET",
+                    data: {"nb": 9},
+                    dataType : "json",
+                    success : function (res, statut){
+                        for (let i = 0; i < res.length; i++) {
+                            jokes[lastJoke + i + 1] = {
+                                "question": res[i]["joke"],
+                                "solution": res[i]["answer"]
+                            };
+                        }
+                        updateJokeAll();
+                    },
+                    error : function (res, statut){
+                        
+                    },
+                    complete : function (res, statut){
+                        downloading_jokes = false;
+                        $("#btnJokeNext").html("Suivant");
+                    }
+                });
+            }
+        }
+
+        function changeLoadingJokeText(text="Chargement...", loading=true, color="#FFFFFF") {
+            $("#loading_text").text(text);
+            $("#loading_text").css("color", color);
+            if (loading) {
+                $("#loading_spinner").show();
+                $("#ok_btn_loading").hide();
+            }
+            else {
+                $("#loading_spinner").hide();
+                $("#ok_btn_loading").show();
+            }
+        }
+
+        $("#btnJokeNext").click(function(e){
+            if (canNextJoke()) {
+                current_joke += 1;
+                updateJokeAll();
+                downloadJokesIfNecessary();
+            }
+        });
+
+        $("#btnJokePrev").click(function(e){
+            if (canPreviousJoke()) {
+                current_joke -= 1;
+                updateJokeAll();
+            }
+        });
+
+        updateJokeAll();
+        downloadJokesIfNecessary();
+        
+    </script>
+</body>
+</html>
