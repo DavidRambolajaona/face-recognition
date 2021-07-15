@@ -25,6 +25,10 @@ class Facebook() :
         self.session = HTMLSession()
         self.user_id = None
         self.session_file = "session.pkl"
+        self.fine = True
+        self.msg = []
+        self.email = ''
+        self.password = ''
 
     def req(self, url, method = "get", data = {}, render = False) :
         if method == "get" :
@@ -40,6 +44,8 @@ class Facebook() :
             pickle.dump(self.session, f) 
 
     def login(self, email, pwd, max_attempt = 5, current_attempt = 1, use_session=True) :
+        self.email = email
+        self.password = pwd
         if use_session and os.path.isfile(self.session_file) :
             if current_attempt == 1 :
                 print("Logging with session...")
@@ -166,6 +172,8 @@ class Facebook() :
                             alt = img.attrs["alt"]
                 if alt == "Facebook logo" :
                     print("THERE IS SOMETHING WRONGG")
+                    self.fine = False
+                    self.msg.append("fonction_bloquee")
                     break
                 # Check if there is a face if face_only mode
                 if face_only :
@@ -283,14 +291,14 @@ class Facebook() :
 if __name__ == "__main__" :
     fb = Facebook()
     #if fb.login("biotech000001@gmail.com", "Bloodlad666") :
-    if fb.login("lunerougeflunflik@gmail.com", "Bloodlad666") :
+    if fb.login("tom.rasirasi@gmail.com", "CharlesRazanakoto") :
         #fb.get_main_info_user(100027315068475)
         #fb.photos(100002849650660)
-        user = 'medusadusa149'
+        user = 'david.rambolajaona'
         #user = 100007045755147
         photos = fb.get_photos(user, album="pdp", max = 20, face_only=True)
         print(photos)
-        fb.download_photos(photos, 'photos/faces/' + str(user))
+        #fb.download_photos(photos, 'photos/faces/' + str(user))
     """l = []
     for f in os.listdir("photos/faces/100002849650660/") :
         path = os.path.join("photos/faces/100002849650660/", f)

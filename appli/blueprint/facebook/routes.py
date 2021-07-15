@@ -72,6 +72,7 @@ def similarity():
         db.session.add(upload)
         db.session.commit()
 
+        print("FINISHED")
         return jsonify({"status": "success", "top": top[:20], "top_unique": top_unique[:20]})
     else :
         return jsonify({"status": "error", "msg": "empty_file"})
@@ -89,7 +90,7 @@ def dropDb() :
 
 @facebook_bp.route('/fb/download')
 def downloadFaces() :
-    ret = {"success": True}
+    ret = {"success": True, "msg": ""}
     account = Account.query.filter(Account.account_active == True).order_by(Account.account_nb_use.asc()).first()
     fb = Facebook()
     if account is not None :
@@ -105,6 +106,7 @@ def downloadFaces() :
             ret["msg"] = "Account not logged with " + account.account_email
         db.session.commit()
     else :
+        print("NO ACCOUNT ANYMORE !")
         ret["success"] = False
         ret["msg"] = "Account is none"
     return jsonify(ret)
@@ -194,9 +196,20 @@ def download(fb_obj, current_attempt = 1) :
                 db.session.commit()
 
                 print("Picture downloaded (", j, "/", lenpics, ")")
-            user.user_retrieved_pictures = True
-            user.user_date_retrieved_pictures = datetime.datetime.utcnow()
-            db.session.commit()
+            if fb_obj.fine :
+                print("FINE !")
+                user.user_retrieved_pictures = True
+                user.user_date_retrieved_pictures = datetime.datetime.utcnow()
+                db.session.commit()
+            else :
+                print("OOPS ! NOT FINE")
+                account = Account.query.filter(Account.account_email == fb_obj.email).first()
+                if account is not None :
+                    account.account_nb_problem += 1
+                    account.account_problem_info = fb_obj.msg[-1]
+                    account.account_active = False
+                    db.session.commit()
+                return False
             
 
 def getImgFaces(path) :
@@ -216,6 +229,6 @@ def getImgFaces(path) :
         im_data["fb_user_name"] = im.img_user.user_fb_name
         im_enc_list = np.array([float(elem) for elem in im.img_encoding.split(',')])
         im_data["dist"] = fb.get_distance_image(im_enc_list, enc)
-        print("(", i, ") Comparaison with : ", im.img_filename, " => dist : ", im_data["dist"])
+        # print("(", i, ") Comparaison with : ", im.img_filename, " => dist : ", im_data["dist"])
         imgs.append(im_data)
     return sorted(imgs, key=lambda k : k["dist"])
